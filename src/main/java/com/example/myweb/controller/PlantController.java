@@ -1,6 +1,8 @@
 package com.example.myweb.controller;
 
 import com.example.myweb.model.Plant;
+import com.example.myweb.model.User;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,14 +13,44 @@ import java.util.List;
 @Controller
 public class PlantController {
 
+    @GetMapping("/login")
+    public String showLogin() {
+        return "login";
+    }
+
+    @GetMapping("/products")
+    public String products() {
+        return "products"; // Trả về products.html
+    }
+    @GetMapping("/seller")
+    public String sellerPage(HttpSession session, Model model) {
+        User user =  (User) session.getAttribute("UserDefined");
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        model.addAttribute("user", user);
+       // model.addAttribute("userID", us);
+        return "seller";
+    }
+
     @GetMapping("/")
-    public String showPlants(Model model) {
-        List<Plant> plants = Arrays.asList(
-                new Plant("Cây Sen Đá", "/images/Sen_da.jpg", 50000),
-                new Plant("Cây Xương Rồng", "/images/catus.jpg", 70000),
-                new Plant("Cây Kim Tiền", "images/Kim_tien.jpg", 120000)
-        );
-        model.addAttribute("plants", plants);
+    public String showIndex(HttpSession session, Model model) {
+        User user =  (User) session.getAttribute("UserDefined");
+
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        model.addAttribute("user", user);
         return "index";
     }
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/login";
+    }
+
+
+
 }

@@ -2,31 +2,135 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Shop Cây Cảnh</title>
+    <title>Trang Chủ - Shop Cây Cảnh</title>
     <style>
-        body { font-family: Arial; background: #f5f5f5; padding: 20px; }
-        h1 { text-align: center; color: green; }
-        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
-        .card {
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #4CAF50;
+            padding: 15px 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .login-btn, .user-name {
+            background-color: #ffffff;
+            color: #4CAF50;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .login-btn:hover, .user-name:hover {
+            background-color: #f0f0f0;
+        }
+        .banner {
+            background-image: url('/images/banner.png');
+            background-size: cover;
+            background-position: center;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+        }
+        .section-title {
+            text-align: center;
+            margin: 40px 0 20px;
+            font-size: 28px;
+            color: #333;
+        }
+        .product-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 0 20px 40px;
+        }
+        .product-card {
             background: white;
             border-radius: 8px;
             padding: 15px;
-            width: 200px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            width: 220px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             text-align: center;
         }
-        img { width: 100%; border-radius: 5px; }
-        .price { color: #e91e63; font-weight: bold; margin-top: 10px; }
+        .product-card img {
+            width: 100%;
+            border-radius: 5px;
+        }
+        .price {
+            color: #e91e63;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 15px;
+        }
     </style>
 </head>
 <body>
-<h1>🌿 Cửa Hàng Cây Cảnh 🌿</h1>
-<div class="container">
-    <div th:each="plant : ${plants}" class="card">
-        <img th:src="${plant.imageUrl}" alt="Hình cây">
-        <h3 th:text="${plant.name}">Tên cây</h3>
-        <p class="price" th:text="${#numbers.formatDecimal(plant.price, 0, 'COMMA', 0, 'POINT')} + ' đ'">Giá</p>
+
+<header>
+    <div><strong>🌿 Shop Cây Cảnh</strong></div>
+    <div style="display: flex; align-items: center;">
+        <nav>
+            <a href="/">Trang Chủ</a>
+            <a href="/products">Sản Phẩm</a>
+            <a href="/about">Giới Thiệu</a>
+            <a href="/contact">Liên Hệ</a>
+        </nav>
+
+
+        <div th:if="${user != null}">
+            <span class="user-name" th:text="${user.UserName}">Tên người dùng</span>
+            <form action="/logout" method="post" style="display: inline;">
+                <button type="submit" class="login-btn">Đăng xuất</button>
+            </form>
+        </div>
+        <!-- Nếu đã đăng nhập -->
+
+
+        <!-- Nếu chưa đăng nhập -->
+        <div th:unless="${user != null}">
+            <a href="/login" class="login-btn">Đăng nhập</a>
+        </div>
+
+
+
     </div>
+</header>
+
+<div class="banner">
+    Chào Mừng Đến Với Shop Cây Cảnh
 </div>
+
+<h2 class="section-title">🌱 Cây Nổi Bật 🌱</h2>
+<div class="product-grid">
+
+</div>
+
+<footer>
+    © 2025 Shop Cây Cảnh. Đã đăng ký bản quyền.
+</footer>
+
 </body>
 </html>

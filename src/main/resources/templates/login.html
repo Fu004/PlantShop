@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+            width: 300px;
+        }
+
+        .login-box h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .login-box input, .login-box button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .login-box input {
+            border: 1px solid #aaa;
+        }
+
+        .login-box button {
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .login-btn {
+            background: #28a745;
+        }
+
+        .register-btn {
+            background: #007bff;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #registerForm {
+            display: none;
+        }
+
+        label {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Đăng nhập</h2>
+
+    <form th:action="@{/login}" method="post">
+        <input type="text" name="username" placeholder="Tên đăng nhập" required>
+        <input type="password" name="password" placeholder="Mật khẩu" required>
+        <button type="submit" class="login-btn">Đăng nhập</button>
+    </form>
+
+    <!-- Thêm thông báo nếu có -->
+    <div class="message" th:if="${message}" th:text="${message}" th:style="${messageColor} ?: 'color:red'"></div>
+
+    <button class="register-btn" onclick="toggleRegister()">Đăng ký</button>
+
+    <form id="registerForm">
+        <input type="text" id="regUsername" placeholder="Tên đăng ký" required>
+        <input type="password" id="regPassword" placeholder="Mật khẩu" required>
+        <label>
+            <input type="checkbox" id="regIsSeller"> Là người bán
+        </label>
+        <button type="button" class="register-btn" onclick="register()">Xác nhận đăng ký</button>
+    </form>
+
+    <div class="message" id="message"></div>
+</div>
+
+<script>
+    const loginForm = document.getElementById('loginForm');
+    const message = document.getElementById('message');
+
+    loginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        const params = new URLSearchParams();
+        params.append('username', username);
+        params.append('password', password);
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            });
+
+            const text = await res.text();
+            message.textContent = text;
+
+            if (text.includes("thành công")) {
+                message.style.color = 'green';
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 1000);
+            } else {
+                message.style.color = 'red';
+            }
+        } catch (err) {
+            console.error(err);
+            message.textContent = "Có lỗi xảy ra!";
+            message.style.color = 'red';
+        }
+    });
+
+    function toggleRegister() {
+        const registerForm = document.getElementById('registerForm');
+        registerForm.style.display = registerForm.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function register() {
+        const username = document.getElementById('regUsername').value;
+        const password = document.getElementById('regPassword').value;
+        const isSeller = document.getElementById('regIsSeller').checked;
+
+        const params = new URLSearchParams();
+        params.append('username', username);
+        params.append('password', password);
+        params.append('isSeller', isSeller);
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            });
+
+            const text = await res.text();
+            message.textContent = text;
+            message.style.color = text.includes("thành công") ? 'green' : 'red';
+        } catch (err) {
+            console.error(err);
+            message.textContent = "Đăng ký thất bại!";
+            message.style.color = 'red';
+        }
+    }
+</script>
+
+</body>
+</html>
