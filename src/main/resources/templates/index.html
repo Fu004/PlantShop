@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Shop Cây Cảnh</title>
+    <style>
+        body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+        h1 { text-align: center; color: green; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            width: 200px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        img { width: 100%; border-radius: 5px; }
+        .price { color: #e91e63; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<h1>🌿 Cửa Hàng Cây Cảnh 🌿</h1>
+<div class="container">
+    <div th:each="plant : ${plants}" class="card">
+        <img th:src="${plant.imageUrl}" alt="Hình cây">
+        <h3 th:text="${plant.name}">Tên cây</h3>
+        <p class="price" th:text="${#numbers.formatDecimal(plant.price, 0, 'COMMA', 0, 'POINT')} + ' đ'">Giá</p>
+    </div>
+</div>
+</body>
+</html>
