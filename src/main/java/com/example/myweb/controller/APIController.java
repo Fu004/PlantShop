@@ -1,8 +1,6 @@
 package com.example.myweb.controller;
 
-import com.example.myweb.model.CartItem;
-import com.example.myweb.model.Product;
-import com.example.myweb.model.User;
+import com.example.myweb.model.*;
 import com.example.myweb.service.SupabaseService;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.ServletContext;
@@ -17,6 +15,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -158,5 +157,88 @@ public class APIController {
         List<CartItem> cartItems = supabaseService.getCartItemsByUser(userID);
         return ResponseEntity.ok(cartItems);
     }
+
+    @DeleteMapping("/deleteProduct/{productId}")
+    public ResponseEntity<String> deleteProduct(@PathVariable Long productId, HttpSession session) {
+        Long userID = (Long) session.getAttribute("userID");
+        if (userID == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Chưa đăng nhập");
+        }
+
+        boolean success = supabaseService.deleteProductById(productId, userID);
+        if (success) {
+            return ResponseEntity.ok("Xóa sản phẩm thành công");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể xóa sản phẩm");
+        }
+    }
+    @PostMapping("/updateProduct")
+    public ResponseEntity<String> updateProduct(@RequestBody Product product, HttpSession session) {
+        Long userID = (Long) session.getAttribute("userID");
+
+        // 🧩 Debug 1: Kiểm tra userID trong session
+        System.out.println("➡️ Session userID: " + userID);
+
+        if (userID == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Chưa đăng nhập");
+        }
+
+        product.setUserID(Math.toIntExact(userID)); // đảm bảo không bị null
+
+        // 🧩 Debug 2: In toàn bộ thông tin sản phẩm trước khi gọi Supabase
+        System.out.println("➡️ Dữ liệu sản phẩm gửi đi để cập nhật:");
+        System.out.println("ProductID: " + product.getProductID());
+        System.out.println("ProductName: " + product.getProductName());
+        System.out.println("ProductDetails: " + product.getProductDetails());
+        System.out.println("ProductImage: " + product.getProductImage());
+        System.out.println("ProductPrice: " + product.getProductPrice());
+        System.out.println("ProductAmount: " + product.getProductAmount());
+        System.out.println("CategoryID: " + product.getCategoryID());
+        System.out.println("UserID (từ session): " + product.getUserID());
+
+        boolean success = supabaseService.editProduct(product);
+
+        if (success) {
+            return ResponseEntity.ok("Cập nhật sản phẩm thành công");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cập nhật thất bại");
+        }
+    }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<String> checkout(
+            @RequestBody Map<String, String> payload,
+            HttpSession session
+    ) {
+        try {
+            // Lấy userID từ session
+            Object userIDObj = session.getAttribute("userID");
+            if (userIDObj == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Chưa đăng nhập.");
+            }
+            Long userID = (Long) session.getAttribute("userID");
+
+            // Lấy thông tin địa chỉ từ request body
+            String information = payload.get("information");
+            if (information == null || information.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Thiếu thông tin giao hàng.");
+            }
+
+            // Gọi SupabaseService để tạo bill
+            boolean success = supabaseService.checkout(Math.toIntExact(userID), information);
+            if (success) {
+                return ResponseEntity.ok("Đã thanh toán thành công!");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Thanh toán thất bại.");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống: " + e.getMessage());
+        }
+    }
+
+
+
 
 }

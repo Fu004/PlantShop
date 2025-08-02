@@ -1,5 +1,7 @@
 package com.example.myweb.service;
 
+import com.example.myweb.model.Bill;
+import com.example.myweb.model.BillDetail;
 import com.example.myweb.model.CartItem;
 import com.example.myweb.model.Product;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -14,8 +16,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SupabaseService {
@@ -220,7 +224,7 @@ public class SupabaseService {
             cartItem.put("Price", price); // 👈 THÊM GIÁ
 
             HttpRequest addItemRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(SUPABASE_BASE_URL + "/CartItem"))
+                    .uri(URI.create(SUPABASE_BASE_URL + "/cartitem"))
                     .header("apikey", SUPABASE_API_KEY)
                     .header("Authorization", "Bearer " + SUPABASE_API_KEY)
                     .header("Content-Type", "application/json")
@@ -241,6 +245,7 @@ public class SupabaseService {
             return false;
         }
     }
+
 
     public List<CartItem> getCartItemsByUser(Long userID) {
         List<CartItem> cartItems = new ArrayList<>();
@@ -276,7 +281,7 @@ public class SupabaseService {
 
             // Bước 2: Lấy các cart item và join với Product
             String itemsUrl = SUPABASE_BASE_URL +
-                    "/CartItem?CartID=eq." + cartID +
+                    "/cartitem?CartID=eq." + cartID +
                     "&select=CartItemID,Quantity,Price,ProductID,Product(ProductID,ProductName,ProductImage,ProductPrice)";
 
             System.out.println("Items URL: " + itemsUrl);
@@ -326,6 +331,191 @@ public class SupabaseService {
         return cartItems;
     }
 
+    public boolean deleteProductById(Long productId, Long userId) {
+        try {
+            String url = SUPABASE_BASE_URL + "/Product?ProductID=eq." + productId + "&UserID=eq." + userId;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("apikey", SUPABASE_API_KEY)
+                    .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                    .header("Content-Type", "application/json")
+                    .header("Prefer", "return=minimal")
+                    .method("DELETE", HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("DELETE response code: " + response.statusCode());
+            System.out.println("DELETE response body: " + response.body());
+
+            return response.statusCode() == 204;
+        } catch (Exception e) {
+            System.out.println("❌ Lỗi khi gọi Supabase để xóa sản phẩm:");
+            e.printStackTrace();
+            return false;
+        }
+    }
+    public boolean editProduct(Product product) {
+        try {
+            String url = SUPABASE_BASE_URL + "/Product?ProductID=eq." + product.getProductID();
+
+
+            // Dữ liệu cần cập nhật
+            ObjectNode updatedFields = objectMapper.createObjectNode();
+            updatedFields.put("ProductName", product.getProductName());
+            updatedFields.put("ProductDetails", product.getProductDetails());
+            updatedFields.put("ProductPrice", product.getProductPrice());
+            updatedFields.put("ProductAmount", product.getProductAmount());
+            updatedFields.put("ProductImage", product.getProductImage()); // Nếu cần sửa ảnh
+            updatedFields.put("UserID", product.getUserID());
+
+            String requestBody = objectMapper.writeValueAsString(updatedFields);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("apikey", SUPABASE_API_KEY)
+                    .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                    .header("Content-Type", "application/json")
+                    .header("Prefer", "return=minimal")
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("PATCH response code: " + response.statusCode());
+            System.out.println("PATCH response body: " + response.body());
+
+            return response.statusCode() == 204;
+
+        } catch (Exception e) {
+            System.out.println("❌ Lỗi khi cập nhật sản phẩm:");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int createBill(Bill bill) throws IOException, InterruptedException {
+        ObjectNode billNode = objectMapper.createObjectNode();
+        billNode.put("UserID", bill.getUserID());
+        billNode.put("CreatedAt", bill.getCreatedAt().toString()); // yyyy-MM-dd
+        billNode.put("Status", 0); // Giả sử mặc định là 0
+        billNode.put("Information", bill.getInformation());
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(SUPABASE_BASE_URL + "/Bill"))
+                .header("apikey", SUPABASE_API_KEY)
+                .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                .header("Content-Type", "application/json")
+                .header("Prefer", "return=representation")
+                .POST(HttpRequest.BodyPublishers.ofString(billNode.toString()))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 201) {
+            JsonNode json = objectMapper.readTree(response.body());
+            return json.get(0).get("BillID").asInt();
+        }
+
+        return -1;
+    }
+
+    public boolean createBillDetail(BillDetail detail) throws IOException, InterruptedException {
+        ObjectNode detailNode = objectMapper.createObjectNode();
+        detailNode.put("BillID", detail.getBillID());
+        detailNode.put("ProductID", detail.getProductID());
+        detailNode.put("Quantity", detail.getQuantity());
+        detailNode.put("Price", detail.getPrice());
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(SUPABASE_BASE_URL + "/BillDetail"))
+                .header("apikey", SUPABASE_API_KEY)
+                .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(detailNode.toString()))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.statusCode() == 201;
+    }
+    public void clearCart(int userID) throws IOException, InterruptedException {
+        int cartID = getCartIDByUserID(userID);  // ✅ đã sửa tên hàm
+        if (cartID == -1) {
+            System.out.println("⚠️ [clearCart] Không tìm thấy CartID để xoá.");
+            return;
+        }
+
+        String url = SUPABASE_BASE_URL + "/cartitem?CartID=eq." + cartID;
+        System.out.println("🧹 [clearCart] URL: " + url);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("apikey", SUPABASE_API_KEY)
+                .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                .method("DELETE", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("🧹 [clearCart] Status Code: " + response.statusCode());
+        System.out.println("🧹 [clearCart] Response Body: " + response.body());
+    }
+
+
+
+    public boolean checkout(int userID, String information) throws IOException, InterruptedException {
+        List<CartItem> items = getCartItemsByUser((long) userID);
+        if (items.isEmpty()) return false;
+
+        Bill bill = new Bill();
+        bill.setUserID(userID);
+        bill.setCreatedAt(LocalDate.now().atStartOfDay());
+        bill.setInformation(information);
+        int billID = createBill(bill);
+        if (billID <= 0) return false;
+
+        for (CartItem item : items) {
+            BillDetail detail = new BillDetail();
+            detail.setBillID((long) billID);
+            detail.setProductID(item.getProduct().getProductID());
+            detail.setQuantity(item.getQuantity());
+            detail.setPrice(item.getProduct().getProductPrice());
+            createBillDetail(detail);
+        }
+
+        // ✅ Sửa chỗ này
+        clearCart(userID);
+        return true;
+    }
+
+    public int getCartIDByUserID(int userID) throws IOException, InterruptedException {
+        String url = SUPABASE_BASE_URL + "/Cart?UserID=eq." + userID + "&select=CartID";
+        System.out.println("🔍 [getCartIDByUserID] URL: " + url);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("apikey", SUPABASE_API_KEY)
+                .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("🔍 [getCartIDByUserID] Status Code: " + response.statusCode());
+        System.out.println("🔍 [getCartIDByUserID] Response Body: " + response.body());
+
+        if (response.statusCode() == 200) {
+            JsonNode json = objectMapper.readTree(response.body());
+            if (json.isArray() && json.size() > 0) {
+                return json.get(0).get("CartID").asInt();
+            } else {
+                System.out.println("⚠️ [getCartIDByUserID] Không tìm thấy cart cho userID = " + userID);
+            }
+        } else {
+            System.out.println("❌ [getCartIDByUserID] Lỗi gọi Supabase API.");
+        }
+
+        return -1;
+    }
+
 
     // ✅ DTO nội bộ
     static class UserRequest {
@@ -339,6 +529,7 @@ public class SupabaseService {
             this.IsSeller = isSeller;
         }
     }
+
 
     public class ProductRequest {
         public int ProductID;

@@ -89,9 +89,8 @@
     </div>
 </div>
 
-<div style="height: 1200px"></div>
 <footer>
-    © 2025 Shop Cây Cảnh. Đã đăng ký bản quyền.
+    © 2025 Little Leaf. Đã đăng ký bản quyền.
 </footer>
 
 <script>
@@ -122,7 +121,7 @@
             card.innerHTML = `
                 ${product.ProductImage ? `<img src="${product.ProductImage}" alt="Hình ảnh sản phẩm">` : ''}
                 <h3>${product.ProductName}</h3>
-                <p><strong>Giá:</strong> ${Number(product.ProductPrice).toLocaleString('vi-VN')} VNĐ</p>
+                <p><strong>Giá:</strong><span style="color: red; font-weight: bold;"> ${Number(product.ProductPrice).toLocaleString('vi-VN')} VNĐ</p>
                 <p><strong>Số lượng :</strong> ${product.ProductAmount ?? 'Không rõ'}</p>
                 <p><strong>Loại:</strong> ${product.CategoryID ?? 'Chưa phân loại'}</p>
                 <p><strong>Mô Tả: </strong>${product.ProductDetails ?? ''}</p>
@@ -148,7 +147,7 @@
         selectedProduct = product;
         document.getElementById('modalImage').src = product.ProductImage || '';
         document.getElementById('modalName').innerText = product.ProductName;
-        document.getElementById('modalPrice').innerText = `Giá: ${Number(product.ProductPrice).toLocaleString('vi-VN')} VNĐ`;
+        document.getElementById('modalPrice').innerHTML = `Giá: <span style="color: red; font-weight: bold;"> ${Number(product.ProductPrice).toLocaleString('vi-VN')} VNĐ`;
         document.getElementById('modalAmount').innerText = `Còn lại: ${product.ProductAmount ?? 'Không rõ'}`;
         document.getElementById('modalCategory').innerText = `Loại: ${product.CategoryID ?? 'Chưa phân loại'}`;
         document.getElementById('modalDetails').innerText = product.ProductDetails ?? '';
@@ -208,3 +207,11 @@
 
 </body>
 </html>
+<style>
+    .input-submit{
+        position: relative;
+    }
+    .submit-btn{
+
+    }
+</style>

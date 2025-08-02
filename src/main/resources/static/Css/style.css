@@ -65,19 +65,22 @@ nav a:hover {
   margin: 30px auto;
   padding: 0 20px;
 }
-.products {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  padding: 20px;
-}
 .product {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px #ccc;
   width: 220px;
+  max-width: 220px; /* Thêm dòng này */
   padding: 15px;
   text-align: center;
+  flex-shrink: 0; /* Ngăn co lại */
+}
+.products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  align-items: flex-start; /* Thêm dòng này */
 }
 .product img {
   width: 100%;

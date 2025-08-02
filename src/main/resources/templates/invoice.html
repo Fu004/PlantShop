@@ -43,7 +43,7 @@
         <p><strong>Mã Hóa Đơn:</strong> HD001</p>
         <p><strong>Khách Hàng:</strong> Nguyễn Văn A</p>
         <p><strong>Ngày:</strong> 01/08/2025</p>
-        <p><strong>Tổng tiền:</strong> <span id="totalPrice" style="color: #2e7d32;">0 VNĐ</span></p>
+        <p><strong>Tổng tiền:</strong> <span id="totalPrice" style="color: red; font-weight: bold;">0 VNĐ</span></p>
     </div>
 
     <div id="invoiceItems" class="products"></div>
@@ -90,9 +90,9 @@
             card.innerHTML = `
         <img src="${item.ProductImage}" alt="Sản phẩm">
         <h3>${item.ProductName}</h3>
-        <p><strong>Giá:</strong> ${item.ProductPrice.toLocaleString('vi-VN')} VNĐ</p>
+        <p><strong>Giá:</strong> <span style="color:red; font-weight: bold;" >${item.ProductPrice.toLocaleString('vi-VN')} VNĐ</p>
         <p><strong>Số lượng:</strong> ${item.ProductAmount}</p>
-        <p><strong>Thành tiền:</strong> ${itemTotal.toLocaleString('vi-VN')} VNĐ</p>
+        <p><strong>Thành tiền:</strong><span style="color:red; font-weight: bold;" > ${itemTotal.toLocaleString('vi-VN')} VNĐ</p>
       `;
 
             container.appendChild(card);

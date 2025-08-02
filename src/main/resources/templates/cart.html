@@ -42,7 +42,13 @@
 
     <div style="margin-top: 30px; text-align: center;">
         <h3 id="totalPrice" style="color: #2e7d32;">Tổng tiền: 0 VNĐ</h3>
-        <button onclick="checkout()" class="logout-btn">Thanh Toán</button>
+        <div class="input-submit">
+            <button onclick="checkout()" class="submit-btn" id="checkbtn"></button>
+            <label for="checkbtn">Thanh Toán</label>
+            <input type="text" id="information" placeholder="Nhập địa chỉ giao hàng...">
+
+        </div>
+
     </div>
 </main>
 
@@ -93,9 +99,9 @@
                 <img src="${product.ProductImage}" alt="${product.ProductName}" class="product-img" />
                 <div class="product-info">
                     <h3>${product.ProductName}</h3>
-                    <p>Giá: ${product.ProductPrice.toLocaleString()} VNĐ</p>
+                    <p>Giá: <span style="color: red; font-weight: bold">${product.ProductPrice.toLocaleString()} VNĐ</span></p>
                     <p>Số lượng: ${item.quantity}</p>
-                    <p>Thành tiền: ${itemTotal.toLocaleString()} VNĐ</p>
+                    <p>Thành tiền:<span style="color: red; font-weight: bold"> ${itemTotal.toLocaleString()} VNĐ</span></p>
                 </div>
             `;
 
@@ -106,9 +112,28 @@
         document.getElementById("totalPrice").innerText = "Tổng tiền: " + total.toLocaleString() + " VNĐ";
     }
 
-    function checkout() {
-        alert("Tính năng thanh toán chưa được triển khai.");
+    async function checkout() {
+        const information = document.getElementById("information").value;
+
+        const response = await fetch("api/auth/checkout", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ information })
+        });
+
+        const text = await response.text();
+        if (response.ok) {
+            alert("✅ " + text);
+            loadCart(); // reload cart sau thanh toán
+        } else {
+            alert("❌ Lỗi thanh toán: " + text);
+        }
     }
+
+
+    window.addEventListener("DOMContentLoaded", loadCart);
 
     window.addEventListener("DOMContentLoaded", loadCart);
 </script>
@@ -117,3 +142,31 @@
 
 </body>
 </html>
+<style>
+    .input-submit{
+        position: relative;
+    }
+    .submit-btn{
+        width: 100%;
+        height: 60px;
+        background: #222;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: .3s;
+    }
+    .input-submit label{
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        color: #fff;
+        -webkit-transform: translate(-50%, -50%);
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+    }
+    .submit-btn:hover{
+        background: #000;
+        transform: scale(1.05,1);
+    }
+</style>
