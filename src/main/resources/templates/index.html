@@ -3,134 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <title>Trang Chủ - Shop Cây Cảnh</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background-color: #4CAF50;
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        nav a {
-            color: white;
-            margin: 0 15px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .login-btn, .user-name {
-            background-color: #ffffff;
-            color: #4CAF50;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .login-btn:hover, .user-name:hover {
-            background-color: #f0f0f0;
-        }
-        .banner {
-            background-image: url('/images/banner.png');
-            background-size: cover;
-            background-position: center;
-            height: 300px;
-            display: flex;
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
             justify-content: center;
             align-items: center;
-            color: white;
-            font-size: 36px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
+            z-index: 999;
         }
-        .section-title {
-            text-align: center;
-            margin: 40px 0 20px;
-            font-size: 28px;
-            color: #333;
-        }
-        .product-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            padding: 0 20px 40px;
-        }
-        .product-card {
+
+        .modal-content {
             background: white;
-            border-radius: 8px;
-            padding: 15px;
-            width: 220px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
         }
-        .product-card img {
-            width: 100%;
-            border-radius: 5px;
-        }
-        .price {
-            color: #e91e63;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 15px;
+
+        .close {
+            position: absolute;
+            top: 10px; right: 15px;
+            font-size: 24px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
 <header>
-    <div><strong>🌿 Shop Cây Cảnh</strong></div>
-    <div style="display: flex; align-items: center;">
-        <nav>
-            <a href="/">Trang Chủ</a>
-            <a href="/products">Sản Phẩm</a>
-            <a href="/about">Giới Thiệu</a>
-            <a href="/contact">Liên Hệ</a>
-        </nav>
-
-
-        <div th:if="${user != null}">
-            <span class="user-name" th:text="${user.UserName}">Tên người dùng</span>
-            <form action="/logout" method="post" style="display: inline;">
-                <button type="submit" class="login-btn">Đăng xuất</button>
-            </form>
-        </div>
-        <!-- Nếu đã đăng nhập -->
-
-
-        <!-- Nếu chưa đăng nhập -->
-        <div th:unless="${user != null}">
-            <a href="/login" class="login-btn">Đăng nhập</a>
-        </div>
-
-
-
+    <div class="header-flex">
+        <span class="shop-title">Little</span>
+        <img src="/images/leaf.png" alt="leaf logo" class="logo-img" />
+        <form class="search-form" onsubmit="handleSearch(event)">
+            <input type="text" id="searchInput" placeholder="Tìm kiếm"/>
+            <button type="submit" aria-label="Tìm kiếm">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="9" cy="9" r="7" stroke="#fff" stroke-width="2"/>
+                    <line x1="14.2" y1="14.2" x2="18" y2="18" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </form>
     </div>
 </header>
 
-<div class="banner">
-    Chào Mừng Đến Với Shop Cây Cảnh
+<nav class="nav">
+    <a href="/">Trang Chủ</a>
+    <a href="/invoice">Hóa Đơn</a>
+    <a href="/cart">Giỏ Hàng</a>
+    <a href="/contact">Liên Hệ</a>
+    <div class="nav-user" th:if="${user != null}">
+        <span class="user-id" th:text="${user.UserName}">Tên người dùng</span>
+        <form class="formlogout" action="/logout" method="post">
+            <button type="submit" class="logout-btn">Đăng xuất</button>
+        </form>
+    </div>
+</nav>
+
+<div th:unless="${user != null}">
+    <a href="/login" class="login-btn">Đăng nhập</a>
 </div>
 
 <h2 class="section-title">🌱 Cây Nổi Bật 🌱</h2>
-<div class="product-grid">
+<div class="products" id="productsList"></div>
 
+<!-- Modal overlay -->
+<div id="productModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img id="modalImage" src="" alt="Ảnh sản phẩm">
+        <h3 id="modalName"></h3>
+        <p id="modalPrice"></p>
+        <p id="modalAmount"></p>
+        <p id="modalCategory"></p>
+        <p id="modalDetails"></p>
+        <label>Số lượng mua:
+            <input type="number" id="buyQuantity" min="1" value="1" />
+        </label>
+        <button onclick="addToCart()">Thêm vào giỏ hàng</button>
+    </div>
 </div>
 
+<div style="height: 1200px"></div>
 <footer>
     © 2025 Shop Cây Cảnh. Đã đăng ký bản quyền.
 </footer>
+
+<script>
+    let allProducts = [];
+
+    async function loadProducts() {
+        try {
+            const res = await fetch('/api/auth/getallProducts', { method: 'POST' });
+            if (!res.ok) throw new Error("Không thể lấy danh sách sản phẩm");
+            allProducts = await res.json();
+            renderProducts(allProducts);
+        } catch (err) {
+            console.error('Lỗi khi tải sản phẩm:', err);
+        }
+    }
+
+    function renderProducts(products) {
+        const listContainer = document.getElementById('productsList');
+        listContainer.innerHTML = '';
+        if (products.length === 0) {
+            listContainer.innerHTML = '<p>Không có sản phẩm nào.</p>';
+            return;
+        }
+
+        products.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                ${product.ProductImage ? `<img src="${product.ProductImage}" alt="Hình ảnh sản phẩm">` : ''}
+                <h3>${product.ProductName}</h3>
+                <p><strong>Giá:</strong> ${Number(product.ProductPrice).toLocaleString('vi-VN')} VNĐ</p>
+                <p><strong>Số lượng :</strong> ${product.ProductAmount ?? 'Không rõ'}</p>
+                <p><strong>Loại:</strong> ${product.CategoryID ?? 'Chưa phân loại'}</p>
+                <p><strong>Mô Tả: </strong>${product.ProductDetails ?? ''}</p>
+            `;
+            card.addEventListener('click', () => showProductModal(product));
+            listContainer.appendChild(card);
+        });
+    }
+
+    function handleSearch(event) {
+        event.preventDefault();
+        const keyword = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allProducts.filter(p =>
+            p.ProductName.toLowerCase().includes(keyword) ||
+            (p.ProductDetails && p.ProductDetails.toLowerCase().includes(keyword))
+        );
+        renderProducts(filtered);
+    }
+
+    let selectedProduct = null;
+
+    function showProductModal(product) {
+        selectedProduct = product;
+        document.getElementById('modalImage').src = product.ProductImage || '';
+        document.getElementById('modalName').innerText = product.ProductName;
+        document.getElementById('modalPrice').innerText = `Giá: ${Number(product.ProductPrice).toLocaleString('vi-VN')} VNĐ`;
+        document.getElementById('modalAmount').innerText = `Còn lại: ${product.ProductAmount ?? 'Không rõ'}`;
+        document.getElementById('modalCategory').innerText = `Loại: ${product.CategoryID ?? 'Chưa phân loại'}`;
+        document.getElementById('modalDetails').innerText = product.ProductDetails ?? '';
+        document.getElementById('buyQuantity').value = 1;
+        document.getElementById('productModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('productModal').style.display = 'none';
+        selectedProduct = null;
+    }
+
+    function addToCart() {
+        const quantity = parseInt(document.getElementById('buyQuantity').value);
+        if (!selectedProduct || quantity <= 0) return;
+
+        const formBody = new URLSearchParams({
+            productId: selectedProduct.ProductID,
+            quantity: quantity,
+            price: selectedProduct.ProductPrice // thêm dòng này
+        });
+
+        fetch("/api/auth/addToCart", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formBody
+        })
+            .then(res => {
+                if (res.status === 401) {
+                    alert('Bạn cần đăng nhập trước khi thêm vào giỏ hàng.');
+                    return;
+                }
+                return res.text();
+            })
+            .then(msg => {
+                if (msg) {
+                    console.log(msg);
+                    alert(msg);
+                    closeModal();
+                }
+            })
+            .catch(err => {
+                console.error('Lỗi khi thêm vào giỏ:', err);
+                alert('Đã có lỗi xảy ra.');
+            });
+    }
+
+    window.addEventListener('click', function (e) {
+        const modal = document.getElementById('productModal');
+        if (e.target === modal) closeModal();
+    });
+
+    window.addEventListener('DOMContentLoaded', loadProducts);
+</script>
 
 </body>
 </html>

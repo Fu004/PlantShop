@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hóa Đơn - Shop Cây Cảnh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<header>
+    <div class="header-flex">
+        <span class="shop-title">Little</span>
+        <img src="/images/leaf.png" alt="leaf logo" class="logo-img" />
+        <form class="search-form" onsubmit="handleSearch(event)">
+            <input type="text" id="searchInput" placeholder="Tìm kiếm" />
+            <button type="submit" aria-label="Tìm kiếm">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="9" cy="9" r="7" stroke="#fff" stroke-width="2" />
+                    <line x1="14.2" y1="14.2" x2="18" y2="18" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</header>
+
+<nav class="nav">
+    <a href="/">Trang Chủ</a>
+    <a href="/invoice">Hóa Đơn</a>
+    <a href="/cart" class="active">Giỏ Hàng</a>
+    <a href="/contact">Liên Hệ</a>
+    <div class="nav-user" th:if="${user != null}">
+        <span class="user-id" th:text="${user.UserName}">Tên người dùng</span>
+        <form class="formlogout" action="/logout" method="post">
+            <button type="submit" class="logout-btn">Đăng xuất</button>
+        </form>
+    </div>
+</nav>
+
+<main class="container">
+    <h2 class="section-title">🧾 Hóa Đơn Của Bạn</h2>
+
+    <div style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 30px;">
+        <p><strong>Mã Hóa Đơn:</strong> HD001</p>
+        <p><strong>Khách Hàng:</strong> Nguyễn Văn A</p>
+        <p><strong>Ngày:</strong> 01/08/2025</p>
+        <p><strong>Tổng tiền:</strong> <span id="totalPrice" style="color: #2e7d32;">0 VNĐ</span></p>
+    </div>
+
+    <div id="invoiceItems" class="products"></div>
+</main>
+
+<footer>
+    © 2025 Shop Cây Cảnh. Đã đăng ký bản quyền.
+</footer>
+
+<script>
+    let invoice = [
+        {
+            ProductName: "Cây Lưỡi Hổ",
+            ProductPrice: 150000,
+            ProductAmount: 1,
+            ProductImage: "/images/cay1.jpg"
+        },
+        {
+            ProductName: "Cây Trầu Bà",
+            ProductPrice: 120000,
+            ProductAmount: 2,
+            ProductImage: "/images/cay2.jpg"
+        }
+    ];
+
+    function renderInvoice() {
+        const container = document.getElementById("invoiceItems");
+        container.innerHTML = "";
+
+        if (invoice.length === 0) {
+            container.innerHTML = "<p>Hóa đơn rỗng.</p>";
+            document.getElementById("totalPrice").innerText = "0 VNĐ";
+            return;
+        }
+
+        let total = 0;
+
+        invoice.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+            const itemTotal = item.ProductPrice * item.ProductAmount;
+            total += itemTotal;
+
+            card.innerHTML = `
+        <img src="${item.ProductImage}" alt="Sản phẩm">
+        <h3>${item.ProductName}</h3>
+        <p><strong>Giá:</strong> ${item.ProductPrice.toLocaleString('vi-VN')} VNĐ</p>
+        <p><strong>Số lượng:</strong> ${item.ProductAmount}</p>
+        <p><strong>Thành tiền:</strong> ${itemTotal.toLocaleString('vi-VN')} VNĐ</p>
+      `;
+
+            container.appendChild(card);
+        });
+
+        document.getElementById("totalPrice").innerText = `${total.toLocaleString('vi-VN')} VNĐ`;
+    }
+
+    function handleSearch(event) {
+        event.preventDefault();
+        const keyword = document.getElementById("searchInput").value.toLowerCase();
+        alert("Chức năng tìm kiếm không khả dụng trong trang hóa đơn.");
+    }
+
+    window.addEventListener("DOMContentLoaded", renderInvoice);
+</script>
+
+</body>
+</html>

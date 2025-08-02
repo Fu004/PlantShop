@@ -1,5 +1,6 @@
 package com.example.myweb.service;
 
+import com.example.myweb.model.CartItem;
 import com.example.myweb.model.Product;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -102,7 +103,7 @@ public class SupabaseService {
             product.put("UserID", userID);
 
             String json = objectMapper.writeValueAsString(product);
-            System.out.println("Request body: " + json);
+           // System.out.println("Request body: " + json);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(SUPABASE_BASE_URL + "/Product")) // 🟢 sửa đúng URL Product
@@ -114,8 +115,8 @@ public class SupabaseService {
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            System.out.println("Response code: " + response.statusCode());
-            System.out.println("Response body: " + response.body());
+        //    System.out.println("Response code: " + response.statusCode());
+         //   System.out.println("Response body: " + response.body());
 
             return response.statusCode() == 201 || response.statusCode() == 200;
         } catch (Exception e) {
@@ -124,7 +125,15 @@ public class SupabaseService {
         }
     }
     public List<Product> getProductsByUserID(int userID) {
-        String url = SUPABASE_BASE_URL + "/Product?UserID=eq." + userID;
+        String url;
+        if (userID == 0) {
+            // Nếu userID là 0, lấy toàn bộ sản phẩm
+            url = SUPABASE_BASE_URL + "/Product";
+        } else {
+            // Nếu khác 0, lọc theo UserID
+            url = SUPABASE_BASE_URL + "/Product?UserID=eq." + userID;
+        }
+
         System.out.println("Đang gọi URL: " + url); // <-- Debug
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -152,6 +161,171 @@ public class SupabaseService {
 
         return new ArrayList<>();
     }
+    public boolean addToCart(Long userID, Long productId, Integer quantity, Double price) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            // 1. Kiểm tra xem user đã có cart chưa
+            String cartCheckUrl = SUPABASE_BASE_URL + "/Cart?UserID=eq." + userID;
+            HttpRequest cartCheckRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(cartCheckUrl))
+                    .header("apikey", SUPABASE_API_KEY)
+                    .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                    .header("Content-Type", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> cartCheckResponse = client.send(cartCheckRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (cartCheckResponse.statusCode() != 200) {
+                System.err.println("❌ Lỗi khi kiểm tra Cart: " + cartCheckResponse.body());
+                return false;
+            }
+
+            JsonNode cartArray = objectMapper.readTree(cartCheckResponse.body());
+            Long cartID;
+
+            // 2. Nếu chưa có Cart, tạo mới
+            if (cartArray.isEmpty()) {
+                ObjectNode newCart = objectMapper.createObjectNode();
+                newCart.put("UserID", userID);
+
+                HttpRequest createCartRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(SUPABASE_BASE_URL + "/Cart"))
+                        .header("apikey", SUPABASE_API_KEY)
+                        .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(newCart.toString()))
+                        .build();
+
+                HttpResponse<String> createCartResponse = client.send(createCartRequest, HttpResponse.BodyHandlers.ofString());
+
+                if (createCartResponse.statusCode() != 201) {
+                    System.err.println("❌ Lỗi khi tạo Cart mới: " + createCartResponse.body());
+                    return false;
+                }
+
+                JsonNode createdCart = objectMapper.readTree(createCartResponse.body());
+                cartID = createdCart.get(0).get("CartID").asLong();
+            } else {
+                cartID = cartArray.get(0).get("CartID").asLong();
+            }
+
+            // 3. Thêm sản phẩm vào giỏ hàng
+            ObjectNode cartItem = objectMapper.createObjectNode();
+            cartItem.put("CartID", cartID);
+            cartItem.put("ProductID", productId);
+            cartItem.put("Quantity", quantity);
+            cartItem.put("Price", price); // 👈 THÊM GIÁ
+
+            HttpRequest addItemRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(SUPABASE_BASE_URL + "/CartItem"))
+                    .header("apikey", SUPABASE_API_KEY)
+                    .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(cartItem.toString()))
+                    .build();
+
+            HttpResponse<String> addItemResponse = client.send(addItemRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (addItemResponse.statusCode() == 201) {
+                return true;
+            } else {
+                System.err.println("❌ Lỗi khi thêm sản phẩm vào giỏ hàng: " + addItemResponse.body());
+                return false;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<CartItem> getCartItemsByUser(Long userID) {
+        List<CartItem> cartItems = new ArrayList<>();
+
+        try {
+            System.out.println("Bắt đầu lấy CartID cho UserID: " + userID);
+
+            // Bước 1: Lấy cartID dựa trên userID
+            String cartUrl = SUPABASE_BASE_URL + "/Cart?UserID=eq." + userID;
+            System.out.println("Cart URL: " + cartUrl);
+
+            HttpRequest cartRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(cartUrl))
+                    .header("apikey", SUPABASE_API_KEY)
+                    .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> cartResponse = client.send(cartRequest, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Cart response: " + cartResponse.body());
+
+            JsonNode cartArray = objectMapper.readTree(cartResponse.body());
+
+            if (!cartArray.isArray() || cartArray.size() == 0) {
+                System.out.println("Không tìm thấy giỏ hàng nào cho userID: " + userID);
+                return cartItems;
+            }
+
+            Long cartID = cartArray.get(0).get("CartID").asLong();
+            System.out.println("Tìm thấy CartID: " + cartID);
+
+            // Bước 2: Lấy các cart item và join với Product
+            String itemsUrl = SUPABASE_BASE_URL +
+                    "/CartItem?CartID=eq." + cartID +
+                    "&select=CartItemID,Quantity,Price,ProductID,Product(ProductID,ProductName,ProductImage,ProductPrice)";
+
+            System.out.println("Items URL: " + itemsUrl);
+
+            HttpRequest itemsRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(itemsUrl))
+                    .header("apikey", SUPABASE_API_KEY)
+                    .header("Authorization", "Bearer " + SUPABASE_API_KEY)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> itemsResponse = client.send(itemsRequest, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Items response: " + itemsResponse.body());
+
+            JsonNode itemsArray = objectMapper.readTree(itemsResponse.body());
+
+            for (JsonNode itemNode : itemsArray) {
+                CartItem cartItem = new CartItem();
+                cartItem.setCartItemID((int) itemNode.get("CartItemID").asLong());
+                cartItem.setQuantity(itemNode.get("Quantity").asInt());
+                cartItem.setPrice((int) itemNode.get("Price").asDouble());
+
+                JsonNode productNode = itemNode.get("Product");
+                if (productNode != null && !productNode.isNull()) {
+                    Product product = new Product();
+                    product.setProductID(productNode.get("ProductID").asLong());
+                    product.setProductName(productNode.get("ProductName").asText());
+                    product.setProductImage(productNode.get("ProductImage").asText());
+                    product.setProductPrice(productNode.get("ProductPrice").asDouble());
+                    cartItem.setProduct(product);
+                } else {
+                    System.out.println("Không có thông tin sản phẩm cho CartItemID: " + cartItem.getCartItemID());
+                }
+
+                cartItems.add(cartItem);
+            }
+
+            System.out.println("Tổng số cart item lấy được: " + cartItems.size());
+
+        } catch (Exception e) {
+            System.out.println("Lỗi xảy ra khi lấy cart items: ");
+            e.printStackTrace();
+        }
+
+        return cartItems;
+    }
+
 
     // ✅ DTO nội bộ
     static class UserRequest {

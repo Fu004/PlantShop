@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Giỏ Hàng - Shop Cây Cảnh</title>
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<header>
+    <div class="header-flex">
+        <span class="shop-title">Little</span>
+        <img src="/images/leaf.png" alt="leaf logo" class="logo-img" />
+        <form class="search-form" onsubmit="handleSearch(event)">
+            <input type="text" id="searchInput" placeholder="Tìm kiếm" />
+            <button type="submit" aria-label="Tìm kiếm">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="9" cy="9" r="7" stroke="#fff" stroke-width="2" />
+                    <line x1="14.2" y1="14.2" x2="18" y2="18" stroke="#fff" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</header>
+
+<nav class="nav">
+    <a href="/">Trang Chủ</a>
+    <a href="/invoice">Hóa Đơn</a>
+    <a href="/cart" class="active">Giỏ Hàng</a>
+    <a href="/contact">Liên Hệ</a>
+    <div class="nav-user" th:if="${user != null}">
+        <span class="user-id" th:text="${user.UserName}">Tên người dùng</span>
+        <form class="formlogout" action="/logout" method="post">
+            <button type="submit" class="logout-btn">Đăng xuất</button>
+        </form>
+    </div>
+</nav>
+
+<main class="container">
+    <h2 class="section-title">🛒 Giỏ Hàng Của Bạn</h2>
+    <div id="cartItems" class="products"></div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <h3 id="totalPrice" style="color: #2e7d32;">Tổng tiền: 0 VNĐ</h3>
+        <button onclick="checkout()" class="logout-btn">Thanh Toán</button>
+    </div>
+</main>
+
+<footer>
+    © 2025 Shop Cây Cảnh. Đã đăng ký bản quyền.
+</footer>
+
+<script>
+    let cart = [];
+
+    async function loadCart() {
+        try {
+            const response = await fetch('/api/auth/cartData');
+            if (!response.ok) {
+                const errorText = await response.text();
+                document.getElementById("cartItems").innerHTML = `<p>Lỗi: ${errorText}</p>`;
+                return;
+            }
+
+            cart = await response.json();
+            console.log("📦 Dữ liệu giỏ hàng:", cart); // DEBUG
+            renderCart();
+        } catch (error) {
+            console.error("Lỗi khi tải giỏ hàng:", error);
+            document.getElementById("cartItems").innerHTML = "<p>Không thể tải giỏ hàng.</p>";
+        }
+    }
+
+    function renderCart() {
+        const cartItemsDiv = document.getElementById("cartItems");
+        cartItemsDiv.innerHTML = "";
+
+        let total = 0;
+
+        if (cart.length === 0) {
+            cartItemsDiv.innerHTML = "<p>Giỏ hàng trống.</p>";
+            document.getElementById("totalPrice").innerText = "Tổng tiền: 0 VNĐ";
+            return;
+        }
+
+        cart.forEach(item => {
+            const product = item.product;
+            const itemTotal = product.ProductPrice * item.quantity;
+
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "product-card";
+            itemDiv.innerHTML = `
+                <img src="${product.ProductImage}" alt="${product.ProductName}" class="product-img" />
+                <div class="product-info">
+                    <h3>${product.ProductName}</h3>
+                    <p>Giá: ${product.ProductPrice.toLocaleString()} VNĐ</p>
+                    <p>Số lượng: ${item.quantity}</p>
+                    <p>Thành tiền: ${itemTotal.toLocaleString()} VNĐ</p>
+                </div>
+            `;
+
+            total += itemTotal; // ✅ Đúng rồi
+            cartItemsDiv.appendChild(itemDiv);
+        });
+
+        document.getElementById("totalPrice").innerText = "Tổng tiền: " + total.toLocaleString() + " VNĐ";
+    }
+
+    function checkout() {
+        alert("Tính năng thanh toán chưa được triển khai.");
+    }
+
+    window.addEventListener("DOMContentLoaded", loadCart);
+</script>
+
+
+
+</body>
+</html>

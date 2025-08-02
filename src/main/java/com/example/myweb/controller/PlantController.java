@@ -18,9 +18,14 @@ public class PlantController {
         return "login";
     }
 
-    @GetMapping("/products")
+    @GetMapping("/cart")
+    public String showCart() {
+        return "cart";
+    }
+
+    @GetMapping("/invoice")
     public String products() {
-        return "products"; // Trả về products.html
+        return "invoice";
     }
     @GetMapping("/seller")
     public String sellerPage(HttpSession session, Model model) {

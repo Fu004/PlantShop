@@ -1,5 +1,6 @@
 package com.example.myweb.controller;
 
+import com.example.myweb.model.CartItem;
 import com.example.myweb.model.Product;
 import com.example.myweb.model.User;
 import com.example.myweb.service.SupabaseService;
@@ -43,6 +44,8 @@ public class APIController {
         JsonNode user = supabaseService.login(username, password);
         if (user != null) {
             session.setAttribute("user", user); // lưu thông tin đăng nhập
+            session.setAttribute("userID", user.get("UserID").asLong());
+
             boolean isSeller = user.get("IsSeller").asBoolean();
             return isSeller ? "redirect:/seller" : "redirect:/";
         } else {
@@ -99,7 +102,7 @@ public class APIController {
     }
     @PostMapping("/getProducts")
     public ResponseEntity<List<Product>> getProducts(HttpSession session) {
-        System.out.println("Gọi hàm getProducts");
+        //System.out.println("Gọi hàm getProducts");
 
         Long userID = (Long) session.getAttribute("userID");
         System.out.println("Session userID: " + userID);  // ← Thêm dòng này để debug
@@ -113,5 +116,47 @@ public class APIController {
         return ResponseEntity.ok(products);
     }
 
+    @PostMapping("/getallProducts")
+    public ResponseEntity<List<Product>> getProducts() {
+        //System.out.println("Gọi hàm getProducts");
+
+        List<Product> products = supabaseService.getProductsByUserID(Math.toIntExact(0));
+        return ResponseEntity.ok(products);
+    }
+    @PostMapping("/addToCart")
+    public ResponseEntity<String> addToCart(@RequestParam Long productId,
+                                            @RequestParam Integer quantity,
+                                            @RequestParam Double price, // 👈 Thêm price ở đây
+                                            HttpSession session) {
+        Long userID = (Long) session.getAttribute("userID");
+        if (userID == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Chưa đăng nhập");
+        }
+
+        if (quantity == null || quantity <= 0) {
+            return ResponseEntity.badRequest().body("Số lượng không hợp lệ");
+        }
+
+        boolean success = supabaseService.addToCart(userID, productId, quantity, price); // 👈 Truyền thêm price
+
+        if (success) {
+            return ResponseEntity.ok("Đã thêm vào giỏ hàng");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi thêm vào giỏ hàng");
+        }
+    }
+
+    @GetMapping("/cartData")
+    public ResponseEntity<?> getCartData(HttpSession session) {
+        Long userID = (Long) session.getAttribute("userID");
+        System.out.println("userID từ session: " + userID); // 👈 thêm dòng này
+
+        if (userID == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Chưa đăng nhập");
+        }
+
+        List<CartItem> cartItems = supabaseService.getCartItemsByUser(userID);
+        return ResponseEntity.ok(cartItems);
+    }
 
 }
